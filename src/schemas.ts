@@ -42,7 +42,24 @@ export const proposedActionSchema = z
     uses_credentials: z.boolean().default(false),
     requests_scope_expansion: z.boolean().default(false)
   })
-  .strict();
+  .strict()
+  .superRefine((action, ctx) => {
+    if (action.amount_cents !== undefined && action.currency === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["currency"],
+        message: "Currency is required when amount_cents is declared."
+      });
+    }
+
+    if (action.amount_cents === undefined && action.currency !== undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["amount_cents"],
+        message: "amount_cents is required when currency is declared."
+      });
+    }
+  });
 
 export type ApprovedScope = z.infer<typeof approvedScopeSchema>;
 export type ProposedAction = z.infer<typeof proposedActionSchema>;

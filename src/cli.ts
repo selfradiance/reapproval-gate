@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, realpath, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { inspect } from "node:util";
 import { z } from "zod";
@@ -23,12 +23,21 @@ function parseArgs(argv: string[]): ParsedArgs {
     const next = rest[index + 1];
 
     if (arg === "--scope") {
+      if (next === undefined || next.startsWith("--")) {
+        throw new Error("--scope requires a value.");
+      }
       parsed.scopePath = next;
       index += 1;
     } else if (arg === "--action") {
+      if (next === undefined || next.startsWith("--")) {
+        throw new Error("--action requires a value.");
+      }
       parsed.actionPath = next;
       index += 1;
     } else if (arg === "--json-out") {
+      if (next === undefined || next.startsWith("--")) {
+        throw new Error("--json-out requires a value.");
+      }
       parsed.jsonOutPath = next;
       index += 1;
     } else {
@@ -77,11 +86,55 @@ function sameResolvedPath(a: string, b: string): boolean {
   return path.resolve(a) === path.resolve(b);
 }
 
-async function writeReceipt(jsonOutPath: string, scopePath: string, actionPath: string, receipt: unknown): Promise<void> {
+interface FileIdentity {
+  resolvedPath: string;
+  realPath?: string;
+  dev?: number;
+  ino?: number;
+}
+
+async function getFileIdentity(filePath: string): Promise<FileIdentity> {
+  const resolvedPath = path.resolve(filePath);
+
+  try {
+    const [realPath, stats] = await Promise.all([realpath(resolvedPath), stat(resolvedPath)]);
+
+    return {
+      resolvedPath,
+      realPath,
+      dev: stats.dev,
+      ino: stats.ino
+    };
+  } catch {
+    return { resolvedPath };
+  }
+}
+
+function sameExistingFile(a: FileIdentity, b: FileIdentity): boolean {
+  if (a.realPath !== undefined && b.realPath !== undefined && a.realPath === b.realPath) {
+    return true;
+  }
+
+  return a.dev !== undefined && a.ino !== undefined && a.dev === b.dev && a.ino === b.ino;
+}
+
+async function assertSafeJsonOut(jsonOutPath: string, scopePath: string, actionPath: string): Promise<void> {
   if (sameResolvedPath(jsonOutPath, scopePath) || sameResolvedPath(jsonOutPath, actionPath)) {
     throw new Error("--json-out must not overwrite either input file.");
   }
 
+  const [outputIdentity, scopeIdentity, actionIdentity] = await Promise.all([
+    getFileIdentity(jsonOutPath),
+    getFileIdentity(scopePath),
+    getFileIdentity(actionPath)
+  ]);
+
+  if (sameExistingFile(outputIdentity, scopeIdentity) || sameExistingFile(outputIdentity, actionIdentity)) {
+    throw new Error("--json-out must not overwrite either input file.");
+  }
+}
+
+async function writeReceipt(jsonOutPath: string, receipt: unknown): Promise<void> {
   await mkdir(path.dirname(path.resolve(jsonOutPath)), { recursive: true });
   await writeFile(jsonOutPath, `${JSON.stringify(receipt, null, 2)}\n`, "utf8");
 }
@@ -117,11 +170,13 @@ async function main(argv: string[]): Promise<number> {
     }
 
     const receipt = evaluateAction(scopeResult.data, actionResult.data);
-    console.log(formatReport(receipt));
 
     if (args.jsonOutPath) {
-      await writeReceipt(args.jsonOutPath, args.scopePath, args.actionPath, receipt);
+      await assertSafeJsonOut(args.jsonOutPath, args.scopePath, args.actionPath);
+      await writeReceipt(args.jsonOutPath, receipt);
     }
+
+    console.log(formatReport(receipt));
 
     return 0;
   } catch (error) {

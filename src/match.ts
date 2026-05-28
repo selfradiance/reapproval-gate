@@ -12,11 +12,16 @@ export function normalizeIntentResource(resource: string): ResourceMatchResult {
     return { valid: false, matched: false, reason: "Resource must not be empty." };
   }
 
-  if (trimmed.startsWith("/") || /^[A-Za-z]:[\\/]/.test(trimmed)) {
+  if (trimmed.startsWith("/") || trimmed.startsWith("\\") || /^[A-Za-z]:[\\/]/.test(trimmed)) {
     return { valid: false, matched: false, reason: "Absolute resource paths are outside scope." };
   }
 
   const slashNormalized = trimmed.replaceAll("\\", "/");
+
+  if (slashNormalized.startsWith("/")) {
+    return { valid: false, matched: false, reason: "Absolute resource paths are outside scope." };
+  }
+
   const segments = slashNormalized.split("/");
 
   if (segments.some((segment) => segment === "..")) {

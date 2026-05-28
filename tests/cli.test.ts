@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
@@ -100,6 +100,35 @@ describe("CLI", () => {
     expect(result.stderr).toContain("Invalid JSON");
   });
 
+  it("amount without currency exits 1", async () => {
+    const dir = await tempDir();
+    const actionPath = path.join(dir, "action.json");
+    await writeFile(
+      actionPath,
+      JSON.stringify({
+        action_id: "action-pay-missing-currency",
+        actor: "codex",
+        action_type: "pay_invoice",
+        resource: "invoice:INV-1001",
+        operation: "pay",
+        destructive: false,
+        amount_cents: 100
+      }),
+      "utf8"
+    );
+
+    const result = await runCli([
+      "evaluate",
+      "--scope",
+      "fixtures/scope.demo.json",
+      "--action",
+      actionPath
+    ]);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("Currency is required when amount_cents is declared");
+  });
+
   it("unreadable file exits 1", async () => {
     const result = await runCli([
       "evaluate",
@@ -138,6 +167,40 @@ describe("CLI", () => {
     expect(scopeResult.stderr).toContain("--json-out must not overwrite either input file");
     expect(actionResult.exitCode).toBe(1);
     expect(actionResult.stderr).toContain("--json-out must not overwrite either input file");
+  });
+
+  it("--json-out must not overwrite an input through an existing symlink", async () => {
+    const dir = await tempDir();
+    const symlinkPath = path.join(dir, "receipt.json");
+    await symlink(path.join(rootDir, "fixtures", "scope.demo.json"), symlinkPath);
+
+    const result = await runCli([
+      "evaluate",
+      "--scope",
+      "fixtures/scope.demo.json",
+      "--action",
+      "fixtures/action.allow.edit-file.json",
+      "--json-out",
+      symlinkPath
+    ]);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("--json-out must not overwrite either input file");
+    expect(result.stdout).not.toContain("Reapproval Gate Report");
+  });
+
+  it("missing --json-out value exits 1", async () => {
+    const result = await runCli([
+      "evaluate",
+      "--scope",
+      "fixtures/scope.demo.json",
+      "--action",
+      "fixtures/action.allow.edit-file.json",
+      "--json-out"
+    ]);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("--json-out requires a value");
   });
 
   it("creates output directory if needed", async () => {

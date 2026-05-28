@@ -25,6 +25,13 @@ describe("resource matching", () => {
   it("rejects absolute paths", () => {
     expect(normalizeIntentResource("/tmp/secret.txt").valid).toBe(false);
     expect(normalizeIntentResource("C:\\tmp\\secret.txt").valid).toBe(false);
+    expect(normalizeIntentResource("\\tmp\\secret.txt").valid).toBe(false);
+    expect(normalizeIntentResource("\\\\server\\share\\secret.txt").valid).toBe(false);
+  });
+
+  it("rejects empty resources", () => {
+    expect(normalizeIntentResource("").valid).toBe(false);
+    expect(normalizeIntentResource("   ").valid).toBe(false);
   });
 
   it("handles README.md exact match", () => {

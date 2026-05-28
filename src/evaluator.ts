@@ -156,6 +156,36 @@ export function evaluateAction(scope: ApprovedScope, action: ProposedAction): Re
   }
 
   if (!decisive) {
+    const spendCurrencyMissingOrMismatched =
+      action.amount_cents !== undefined && action.currency?.trim() !== scope.currency.trim();
+
+    if (spendCurrencyMissingOrMismatched && scope.reapproval_triggers.spend_above_limit) {
+      decisive = addTrace(
+        ruleTrace,
+        decisiveTrace(
+          "spend_currency_mismatch_requires_reapproval",
+          "reapproval_required",
+          "SPEND_CURRENCY_MISMATCH_REQUIRES_REAPPROVAL",
+          "Spend currency is missing or differs from the approved scope currency and requires fresh human reapproval."
+        ),
+        {
+          decision: "reapproval_required",
+          reason: "SPEND_CURRENCY_MISMATCH_REQUIRES_REAPPROVAL",
+          rule: "spend_currency_mismatch_requires_reapproval"
+        }
+      );
+    } else {
+      addTrace(
+        ruleTrace,
+        passTrace(
+          "spend_currency_mismatch_requires_reapproval",
+          "Spend currency matches the approved scope currency or spend is not declared."
+        )
+      );
+    }
+  }
+
+  if (!decisive) {
     const exceedsSpendLimit = action.amount_cents !== undefined && action.amount_cents > scope.spend_limit_cents;
 
     if (exceedsSpendLimit && scope.reapproval_triggers.spend_above_limit) {

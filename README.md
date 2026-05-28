@@ -28,6 +28,14 @@ Agents are moving from answering to acting. Once an agent proposes an action, a 
 - Exits `0` for completed evaluations, including `deny` and `reapproval_required`.
 - Exits `1` for unreadable files, invalid JSON, schema errors, or unsafe `--json-out` paths.
 
+## Decision Meanings
+
+- `allow` means no configured deny or reapproval rule fired for the declared JSON intent. It does not mean the action is safe.
+- `deny` means the proposed action is outside the approved action type, actor, or resource prefixes.
+- `reapproval_required` means the proposed action crossed a configured threshold and should receive fresh human review before proceeding.
+
+The tool does not verify signatures, approval freshness, or human identity. It evaluates the declared JSON fields only.
+
 ## What It Does Not Do
 
 - It does not execute the proposed action.
@@ -140,6 +148,10 @@ Resource prefix matching supports:
 
 The evaluator rejects obvious path traversal, absolute Unix paths, absolute Windows paths, and empty resources as outside scope.
 
+Schemas are strict: unknown fields are rejected. Spend actions with `amount_cents` must also declare `currency`. The evaluator does not convert currencies; if declared spend currency is missing or differs from the scope currency, that spend requires reapproval when spend reapproval is enabled.
+
+Receipts echo selected fields from the supplied action intent, including identifiers, resource strings, recipient/domain values when provided, and whether credential use was declared. Do not put secrets in action intent JSON if they should not appear in receipts.
+
 Rule priority is fixed:
 
 1. malformed input or schema errors produce a CLI error
@@ -147,12 +159,13 @@ Rule priority is fixed:
 3. disallowed actor denies
 4. resource outside approved prefixes denies
 5. destructive operation may require reapproval
-6. spend above limit may require reapproval
-7. new recipient may require reapproval
-8. new domain may require reapproval
-9. credential use may require reapproval
-10. scope expansion may require reapproval
-11. otherwise allow
+6. spend currency mismatch may require reapproval
+7. spend above limit may require reapproval
+8. new recipient may require reapproval
+9. new domain may require reapproval
+10. credential use may require reapproval
+11. scope expansion may require reapproval
+12. otherwise allow
 
 The first decisive rule wins. The receipt includes the ordered rule trace that was evaluated up to that decision.
 

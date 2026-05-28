@@ -105,6 +105,43 @@ describe("evaluateAction", () => {
     expect(receipt.reason).toBe("SPEND_ABOVE_LIMIT_REQUIRES_REAPPROVAL");
   });
 
+  it("allows spend exactly at the approved limit", () => {
+    const receipt = evaluateAction(
+      scope,
+      action({
+        action_type: "pay_invoice",
+        resource: "invoice:INV-1001",
+        operation: "pay",
+        amount_cents: 5000,
+        currency: "USD",
+        recipient: "teammate@example.com",
+        domain: "example.com"
+      })
+    );
+
+    expect(receipt.decision).toBe("allow");
+    expect(receipt.reason).toBe("NO_REAPPROVAL_TRIGGERED");
+  });
+
+  it("requires reapproval for spend currency mismatch", () => {
+    const receipt = evaluateAction(
+      scope,
+      action({
+        action_type: "pay_invoice",
+        resource: "invoice:INV-1001",
+        operation: "pay",
+        amount_cents: 4000,
+        currency: "EUR",
+        recipient: "teammate@example.com",
+        domain: "example.com"
+      })
+    );
+
+    expect(receipt.decision).toBe("reapproval_required");
+    expect(receipt.reason).toBe("SPEND_CURRENCY_MISMATCH_REQUIRES_REAPPROVAL");
+    expect(receipt.decisive_rule).toBe("spend_currency_mismatch_requires_reapproval");
+  });
+
   it("requires reapproval for new recipient", () => {
     const receipt = evaluateAction(
       scope,
@@ -165,6 +202,90 @@ describe("evaluateAction", () => {
     expect(receipt.decision).toBe("deny");
     expect(receipt.reason).toBe("ACTION_TYPE_NOT_ALLOWED");
     expect(receipt.rule_trace).toHaveLength(1);
+  });
+
+  it("keeps deny priority for disallowed actor before destructive reapproval", () => {
+    const receipt = evaluateAction(scope, action({ actor: "unknown-agent", destructive: true }));
+
+    expect(receipt.decision).toBe("deny");
+    expect(receipt.reason).toBe("ACTOR_NOT_ALLOWED");
+    expect(receipt.decisive_rule).toBe("actor_allowed");
+  });
+
+  it("keeps deny priority for outside resource before destructive reapproval", () => {
+    const receipt = evaluateAction(scope, action({ resource: "secrets/token.txt", destructive: true }));
+
+    expect(receipt.decision).toBe("deny");
+    expect(receipt.reason).toBe("RESOURCE_OUTSIDE_APPROVED_PREFIXES");
+    expect(receipt.decisive_rule).toBe("resource_prefix_allowed");
+  });
+
+  it("does not require reapproval when a specific trigger is disabled", () => {
+    const relaxedScope: ApprovedScope = {
+      ...scope,
+      reapproval_triggers: {
+        ...scope.reapproval_triggers,
+        spend_above_limit: false
+      }
+    };
+
+    const receipt = evaluateAction(
+      relaxedScope,
+      action({
+        action_type: "pay_invoice",
+        resource: "invoice:INV-1001",
+        operation: "pay",
+        amount_cents: 7500,
+        currency: "USD",
+        recipient: "teammate@example.com",
+        domain: "example.com"
+      })
+    );
+
+    expect(receipt.decision).toBe("allow");
+    expect(receipt.reason).toBe("NO_REAPPROVAL_TRIGGERED");
+  });
+
+  it("allows an unknown recipient when that trigger is disabled", () => {
+    const relaxedScope: ApprovedScope = {
+      ...scope,
+      reapproval_triggers: {
+        ...scope.reapproval_triggers,
+        new_recipient: false
+      }
+    };
+
+    const receipt = evaluateAction(
+      relaxedScope,
+      action({
+        action_type: "send_email",
+        resource: "email:draft-001",
+        operation: "send",
+        recipient: "newperson@example.com",
+        domain: "example.com"
+      })
+    );
+
+    expect(receipt.decision).toBe("allow");
+    expect(receipt.reason).toBe("NO_REAPPROVAL_TRIGGERED");
+  });
+
+  it("keeps a stable rule trace order for allowed actions", () => {
+    const receipt = evaluateAction(scope, baseAction);
+
+    expect(receipt.rule_trace.map((entry) => entry.rule)).toEqual([
+      "action_type_allowed",
+      "actor_allowed",
+      "resource_prefix_allowed",
+      "destructive_operation_requires_reapproval",
+      "spend_currency_mismatch_requires_reapproval",
+      "spend_above_limit_requires_reapproval",
+      "new_recipient_requires_reapproval",
+      "new_domain_requires_reapproval",
+      "credential_use_requires_reapproval",
+      "scope_expansion_requires_reapproval",
+      "default_allow"
+    ]);
   });
 
   it("keeps the first decisive rule stable", () => {

@@ -7,6 +7,6 @@
   "destructive": false,
   "amount_cents": 7500,
   "currency": "USD",
-  "recipient": "vendor@example.com",
+  "recipient": "teammate@example.com",
   "domain": "example.com"
 }
