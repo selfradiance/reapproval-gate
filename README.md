@@ -182,4 +182,4 @@ These projects are related, but this repository does not integrate with them:
 
 ## Honest Status
 
-`reapproval-gate` is a v0.1.0 local proof. It demonstrates deterministic before-execution evaluation and receipt generation for a narrow set of reapproval thresholds. It is not release-tagged yet.
+`reapproval-gate` is a v0.1.0 local proof. It demonstrates deterministic before-execution evaluation and receipt generation for a narrow set of reapproval thresholds.
