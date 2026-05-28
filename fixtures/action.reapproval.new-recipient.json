@@ -1,0 +1,10 @@
+{
+  "action_id": "action-email-001",
+  "actor": "codex",
+  "action_type": "send_email",
+  "resource": "email:draft-001",
+  "operation": "send",
+  "destructive": false,
+  "recipient": "newperson@example.com",
+  "domain": "example.com"
+}

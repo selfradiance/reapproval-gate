@@ -1,0 +1,12 @@
+{
+  "action_id": "action-pay-001",
+  "actor": "codex",
+  "action_type": "pay_invoice",
+  "resource": "invoice:INV-1001",
+  "operation": "pay",
+  "destructive": false,
+  "amount_cents": 7500,
+  "currency": "USD",
+  "recipient": "vendor@example.com",
+  "domain": "example.com"
+}

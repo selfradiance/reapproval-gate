@@ -1,0 +1,9 @@
+{
+  "action_id": "action-expand-001",
+  "actor": "codex",
+  "action_type": "edit_file",
+  "resource": "scripts/deploy.ts",
+  "operation": "modify",
+  "destructive": false,
+  "requests_scope_expansion": true
+}

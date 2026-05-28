@@ -1,0 +1,30 @@
+{
+  "name": "reapproval-gate",
+  "version": "0.1.0",
+  "description": "A narrow local CLI that evaluates proposed action intent against approved reapproval thresholds.",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "evaluate": "tsx src/cli.ts evaluate",
+    "demo:allow": "tsx src/cli.ts evaluate --scope fixtures/scope.demo.json --action fixtures/action.allow.edit-file.json --json-out .reapproval-gate/allow-receipt.json",
+    "demo:destructive": "tsx src/cli.ts evaluate --scope fixtures/scope.demo.json --action fixtures/action.reapproval.destructive.json --json-out .reapproval-gate/destructive-receipt.json",
+    "demo:spend": "tsx src/cli.ts evaluate --scope fixtures/scope.demo.json --action fixtures/action.reapproval.spend.json --json-out .reapproval-gate/spend-receipt.json",
+    "demo:deny": "tsx src/cli.ts evaluate --scope fixtures/scope.demo.json --action fixtures/action.deny.outside-resource.json --json-out .reapproval-gate/deny-receipt.json"
+  },
+  "dependencies": {
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.1.0"
+  }
+}

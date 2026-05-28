@@ -1,0 +1,29 @@
+{
+  "scope_id": "scope-demo-001",
+  "approved_by": "human-local",
+  "approved_at": "2026-05-28T12:00:00.000Z",
+  "allowed_actors": ["codex", "claude"],
+  "allowed_action_types": ["edit_file", "send_email", "pay_invoice", "run_command"],
+  "allowed_resource_prefixes": [
+    "src/**",
+    "tests/**",
+    "scripts/**",
+    "README.md",
+    "package.json",
+    "invoice:INV-1001",
+    "email:draft-001"
+  ],
+  "allowed_recipients": ["teammate@example.com"],
+  "allowed_domains": ["example.com", "github.com"],
+  "spend_limit_cents": 5000,
+  "currency": "USD",
+  "reapproval_triggers": {
+    "destructive_operation": true,
+    "new_recipient": true,
+    "new_domain": true,
+    "credential_use": true,
+    "scope_expansion": true,
+    "spend_above_limit": true
+  },
+  "default_decision": "deny"
+}

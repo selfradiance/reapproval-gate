@@ -1,0 +1,5 @@
+node_modules/
+dist/
+.reapproval-gate/
+.env
+REAPPROVAL_GATE_PROJECT_CONTEXT.md

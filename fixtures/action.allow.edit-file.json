@@ -1,0 +1,8 @@
+{
+  "action_id": "action-edit-001",
+  "actor": "codex",
+  "action_type": "edit_file",
+  "resource": "src/index.ts",
+  "operation": "modify",
+  "destructive": false
+}

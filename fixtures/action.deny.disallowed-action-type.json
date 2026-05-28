@@ -1,0 +1,8 @@
+{
+  "action_id": "action-type-001",
+  "actor": "codex",
+  "action_type": "open_browser",
+  "resource": "src/index.ts",
+  "operation": "navigate",
+  "destructive": false
+}

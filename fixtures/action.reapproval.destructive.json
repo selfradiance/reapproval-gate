@@ -1,0 +1,8 @@
+{
+  "action_id": "action-delete-001",
+  "actor": "codex",
+  "action_type": "edit_file",
+  "resource": "src/old.ts",
+  "operation": "delete",
+  "destructive": true
+}

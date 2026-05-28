@@ -1,0 +1,8 @@
+{
+  "action_id": "action-actor-001",
+  "actor": "unknown-agent",
+  "action_type": "edit_file",
+  "resource": "src/index.ts",
+  "operation": "modify",
+  "destructive": false
+}
